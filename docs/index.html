@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SAFe PI Analytics Dashboard - Interactive Demo</title>
+    <meta name="description" content="Interactive SAFe Program Increment analytics dashboard built with marimo notebooks and DuckDB. Features real-time filtering and comprehensive PI metrics.">
+    <link rel="canonical" href="https://richardfellows.github.io/safe-pi-dashboard/">
+    
+    <!-- Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .hero {
+            text-align: center;
+            color: white;
+            padding: 60px 0;
+        }
+        
+        .hero h1 {
+            font-size: 3.5em;
+            font-weight: 300;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero p {
+            font-size: 1.3em;
+            opacity: 0.9;
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .hero-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: white;
+            border-color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        }
+        
+        .dashboard {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow: hidden;
+            margin-top: 40px;
+        }
+        
+        .dashboard-header {
+            background: #f8f9fa;
+            padding: 30px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .dashboard-title {
+            font-size: 2em;
+            color: #495057;
+            margin-bottom: 10px;
+        }
+        
+        .dashboard-subtitle {
+            color: #6c757d;
+            font-size: 1.1em;
+        }
+        
+        .summary {
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .stat {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+        
+        .stat:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .stat-value.primary { color: #007bff; }
+        .stat-value.success { color: #28a745; }
+        .stat-value.warning { color: #ffc107; }
+        .stat-value.info { color: #17a2b8; }
+        
+        .stat-label {
+            color: #6c757d;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9em;
+        }
+        
+        .chart-section {
+            padding: 40px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .chart-section:last-child {
+            border-bottom: none;
+        }
+        
+        .chart-title {
+            font-size: 1.5em;
+            color: #495057;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-top: 20px;
+        }
+        
+        .features {
+            padding: 60px 30px;
+            background: white;
+            margin-top: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .features h2 {
+            text-align: center;
+            font-size: 2.5em;
+            color: #495057;
+            margin-bottom: 50px;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .feature {
+            padding: 30px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .feature:hover {
+            background: #e9ecef;
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            display: block;
+        }
+        
+        .feature h3 {
+            font-size: 1.3em;
+            color: #495057;
+            margin-bottom: 15px;
+        }
+        
+        .feature p {
+            color: #6c757d;
+            line-height: 1.6;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            margin-top: 40px;
+        }
+        
+        .footer a {
+            color: white;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+        
+        .footer a:hover {
+            border-bottom-color: white;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5em; }
+            .hero p { font-size: 1.1em; }
+            .hero-buttons { flex-direction: column; align-items: center; }
+            .btn { width: 250px; }
+            .stats { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+            .feature-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>SAFe PI Analytics Dashboard</h1>
+            <p>Interactive Program Increment metrics built with marimo notebooks and DuckDB. 
+               Features reactive visualizations, real-time filtering, and comprehensive scope analysis.</p>
+            
+            <div class="hero-buttons">
+                <a href="https://github.com/RichardFellows/safe-pi-dashboard" class="btn btn-primary">
+                    📁 View on GitHub
+                </a>
+                <a href="#demo" class="btn btn-secondary">
+                    🚀 View Demo
+                </a>
+            </div>
+        </div>
+        
+        <div id="demo" class="dashboard">
+            <div class="dashboard-header">
+                <h2 class="dashboard-title">📊 Live Demo Dashboard</h2>
+                <p class="dashboard-subtitle">
+                    Interactive preview with sample data. The full dashboard supports real-time filtering and live database connections.
+                </p>
+            </div>
+            
+            <div class="summary">
+                <h3>📋 PI-2024-Q3 Executive Summary</h3>
+                <div class="stats">
+                    <div class="stat">
+                        <div class="stat-value primary">18</div>
+                        <div class="stat-label">Total Features</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value success">12</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value warning">4</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value info">66.7%</div>
+                        <div class="stat-label">Completion Rate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <h3 class="chart-title">
+                    🎯 PI Completion Rate by ART
+                </h3>
+                <div class="chart-container">
+                    <canvas id="completionChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="chart-section">
+                <h3 class="chart-title">
+                    📈 Workstream Velocity Trends
+                </h3>
+                <div class="chart-container">
+                    <canvas id="velocityChart"></canvas>
+                </div>
+            </div>
+        </div>
+        
+        <div class="features">
+            <h2>🌟 Key Features</h2>
+            <div class="feature-grid">
+                <div class="feature">
+                    <span class="feature-icon">🎯</span>
+                    <h3>Executive Summary</h3>
+                    <p>Get instant visibility into PI progress with completion rates, feature counts, and team metrics.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">📊</span>
+                    <h3>Interactive Visualizations</h3>
+                    <p>Reactive charts that update automatically when filters change. Built with Plotly for rich interactivity.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🔄</span>
+                    <h3>Real-time Filtering</h3>
+                    <p>Filter by PI, ART, workstream with automatic chart updates. No manual refresh needed.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🔗</span>
+                    <h3>Dependency Tracking</h3>
+                    <p>Visualize cross-ART dependencies with interactive heatmaps and resolution tracking.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">📈</span>
+                    <h3>Throughput Analysis</h3>
+                    <p>Track workstream velocity with rolling averages and trend analysis over time.</p>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">⚡</span>
+                    <h3>DuckDB Performance</h3>
+                    <p>Lightning-fast analytics with DuckDB's columnar engine. Handle millions of Jira issues.</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                <strong>Ready to get started?</strong><br>
+                <a href="https://github.com/RichardFellows/safe-pi-dashboard">
+                    📁 Clone the repository
+                </a> • 
+                <a href="https://marimo.io/">
+                    📓 Learn about Marimo
+                </a> • 
+                <a href="https://duckdb.org/">
+                    🦆 Learn about DuckDB
+                </a>
+            </p>
+            <p style="margin-top: 20px; opacity: 0.8;">
+                Generated on 2025-08-02 • 
+                <a href="https://github.com/RichardFellows/safe-pi-dashboard/blob/main/LICENSE">MIT License</a> •
+                Built with ❤️ and <a href="https://claude.ai/">Claude</a>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Demo data
+        const demoData = {
+        "pi": "PI-2024-Q3",
+        "total_features": 18,
+        "completed_features": 12,
+        "in_progress_features": 4,
+        "completion_rate": 66.7,
+        "arts": [
+                {
+                        "name": "Platform",
+                        "planned": 6,
+                        "completed": 5,
+                        "rate": 83.3
+                },
+                {
+                        "name": "Commerce",
+                        "planned": 5,
+                        "completed": 4,
+                        "rate": 80.0
+                },
+                {
+                        "name": "Analytics",
+                        "planned": 4,
+                        "completed": 2,
+                        "rate": 50.0
+                },
+                {
+                        "name": "Mobile",
+                        "planned": 3,
+                        "completed": 1,
+                        "rate": 33.3
+                }
+        ],
+        "workstreams": [
+                {
+                        "name": "Team-Alpha",
+                        "velocity": [
+                                2,
+                                3,
+                                2,
+                                4,
+                                3
+                        ]
+                },
+                {
+                        "name": "Team-Beta",
+                        "velocity": [
+                                1,
+                                2,
+                                3,
+                                2,
+                                3
+                        ]
+                },
+                {
+                        "name": "Team-Gamma",
+                        "velocity": [
+                                3,
+                                1,
+                                2,
+                                3,
+                                2
+                        ]
+                }
+        ]
+};
+        
+        // Completion Rate Chart
+        const completionCtx = document.getElementById('completionChart').getContext('2d');
+        new Chart(completionCtx, {
+            type: 'bar',
+            data: {
+                labels: demoData.arts.map(art => art.name),
+                datasets: [{
+                    label: 'Completion Rate (%)',
+                    data: demoData.arts.map(art => art.rate),
+                    backgroundColor: demoData.arts.map(art => 
+                        art.rate >= 80 ? '#28a745' : 
+                        art.rate >= 60 ? '#ffc107' : '#dc3545'
+                    ),
+                    borderWidth: 0,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    annotation: {
+                        annotations: {
+                            line1: {
+                                type: 'line',
+                                xMin: 80,
+                                xMax: 80,
+                                borderColor: 'red',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                label: {
+                                    content: 'Target: 80%',
+                                    enabled: true,
+                                    position: 'end'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Velocity Chart
+        const velocityCtx = document.getElementById('velocityChart').getContext('2d');
+        const weeks = ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'];
+        
+        new Chart(velocityCtx, {
+            type: 'line',
+            data: {
+                labels: weeks,
+                datasets: demoData.workstreams.map((workstream, index) => ({
+                    label: workstream.name,
+                    data: workstream.velocity,
+                    borderColor: [`#007bff`, `#28a745`, `#ffc107`][index],
+                    backgroundColor: [`#007bff20`, `#28a74520`, `#ffc10720`][index],
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4
+                }))
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Features Completed'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Time Period'
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Add smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Add loading animation
+        window.addEventListener('load', function() {
+            document.body.style.opacity = '0';
+            document.body.style.transition = 'opacity 0.5s ease-in-out';
+            setTimeout(() => {
+                document.body.style.opacity = '1';
+            }, 100);
+        });
+        
+        console.log('SAFe PI Dashboard Demo Loaded');
+    </script>
+</body>
+</html>
