@@ -1,0 +1,25 @@
+# SAFe PI Dashboard Requirements
+# Core dependencies for the dashboard
+
+# Notebook and SQL engine
+marimo[sql]>=0.9.30
+duckdb>=0.10.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Visualization
+plotly>=5.17.0
+
+# Development and testing (optional)
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Additional SQL support (optional)
+polars[pyarrow]>=0.20.0
+
+# Database connectors (optional)
+# sqlalchemy>=2.0.0
+# psycopg2-binary>=2.9.0  # PostgreSQL
+# pymysql>=1.0.0          # MySQL

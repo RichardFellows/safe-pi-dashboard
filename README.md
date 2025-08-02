@@ -1,4 +1,55 @@
-# SAFe PI Dashboard Testing Suite
+# SAFe PI Analytics Dashboard
+
+[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Marimo](https://img.shields.io/badge/marimo-0.9.30+-green.svg)](https://marimo.io/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+Interactive dashboard for Scaled Agile Framework (SAFe) Program Increment analytics built with marimo notebooks and DuckDB. Features reactive visualizations, real-time filtering, and comprehensive PI scope analysis.
+
+## Features
+
+🎯 **Executive Summary**: Total features, completion rates, and team metrics  
+📊 **PI Completion by ART**: Horizontal bar charts with 80% target lines  
+📈 **Workstream Throughput**: Time series with rolling averages  
+⏱️ **Lead Time Distribution**: Box plots by workstream  
+🔥 **PI Burnup Progress**: Actual vs ideal progress tracking  
+🔗 **Cross-ART Dependencies**: Interactive heatmap matrix  
+🎲 **Scope Variance**: Committed vs added features analysis  
+🚨 **Unplanned Work**: Treemap visualization by story points  
+
+## Quick Start
+
+### 1. Installation
+```bash
+git clone https://github.com/RichardFellows/safe-pi-dashboard.git
+cd safe-pi-dashboard
+pip install -r requirements.txt
+```
+
+### 2. Run with Test Data
+```bash
+# Generate demo with test data
+python3 run_tests.py --demo
+python3 demo.py
+```
+
+### 3. Connect Your Data
+Update database connection in `safe_pi_dashboard.py` line 33:
+```python
+conn = duckdb.connect("path/to/your/jira.db")
+```
+
+## Data Requirements
+
+Your Jira data should include:
+- **Issues table**: `key`, `issuetype`, `status`, `workstream`, `labels`, `created_date`, `resolved_date`
+- **Changelog table**: `issue_key`, `field`, `from_value`, `to_value`, `changed_date`
+- **Issue Links table**: `source_key`, `target_key`, `link_type`
+
+### Label Format
+- **PI Labels**: `PI-YYYY-QN` (e.g., `PI-2024-Q3`)
+- **ART Labels**: `ART-{name}` (e.g., `ART-Platform`)
+- **Feature Type**: `issuetype = 'Feature'`
 
 ## Overview
 Comprehensive test validation for the SAFe Program Increment dashboard built with marimo notebooks and DuckDB.
